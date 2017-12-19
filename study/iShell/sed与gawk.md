@@ -90,3 +90,18 @@ The quick brown fox jumps over the lazy cat.
 
 #### 在命令行上使用多个编辑器命令
 
+使用`-e`选项可以执行多个命令
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed -e 's/brown/green/; s/dog/cat/' data1.txt
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+The quick green fox jumps over the lazy cat.
+```
+
