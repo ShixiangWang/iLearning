@@ -105,3 +105,303 @@ The quick green fox jumps over the lazy cat.
 The quick green fox jumps over the lazy cat.
 ```
 
+两个命令都作用到文件中的每一行数据上。命令之间必须用分号隔开，并且**在命令末尾与分号之间不同有空格**。
+
+如果不想使用分号，可以用bash shell中的次提示符来分隔命令。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed -e '
+> s/brown/green/
+> s/fox/elephant/
+> s/dog/cat/' data1.txt
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+```
+
+#### 从文件中读取编辑器命令
+
+如果有大量要处理的sed命令，将其单独放入一个文本中会更方便，可以用sed命令的`-f`选项来指定文件。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat script1.sed
+s/brown/green/
+s/fox/elephant/
+s/dog/cat/
+
+wsx@wsx-laptop:~/tmp$ sed -f script1.sed data1.txt
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+The quick green elephant jumps over the lazy cat.
+```
+
+这种情况不用在每个命令后面放一个分号，sed知道每行都有一条单独的命令。
+
+
+
+### gawk程序
+
+gawk是一个处理文本的更高级工具，能够提供一个类编程环境来修改和重新组织文件中的数据。
+
+```
+说明	在所有的发行版都没有默认安装gawk程序，请先安装
+```
+
+gawk程序是Unix中原始awk的GNU版本，它让流编辑器迈上了一个新的台阶，提供了一种编程语言而不只是编辑器命令。
+
+我们可以利用它做下面的事情：
+
+- 定义变量来保存数据
+- 使用算术和字符串操作符来处理数据
+- 使用结构化编程概念来为数据处理增加处理逻辑
+- 通过提取数据文件中的数据元素，将其重新排列或格式化，生成格式化报告
+
+gawk程序的报告生成能力通常用来从大文本文件中提取数据元素，并将它们格式化成可读的报告，使得重要的数据更易于可读。
+
+#### 基本命令格式
+
+```shell
+gawk options program file
+```
+
+下面显示了gawk程序的可用选项
+
+| 选项           | 描述                  |
+| ------------ | ------------------- |
+| -F fs        | 指定行中划分数据字段的字段分隔符    |
+| -f file      | 从指定文件中读取程序          |
+| -v var=value | 定义gawk程序中的一个变量及其默认值 |
+| -mf N        | 指定要处理的数据文件中的最大字段数   |
+| -mr N        | 指定数据文件中的最大数据行数      |
+| -W keyword   | 指定gawk的兼容模式或警告等级    |
+
+gawk的**强大之处在于程序脚本**（善于利用工具最强之处），可以写脚本来读取文本行的数据，然后处理并显示数据，创建任何类型的输出报告。
+
+#### 从命令行读取脚本
+
+我们必须将脚本命令放入两个花括号中，而由于gawk命令行假定脚本是单个文本字符串，所以我们必须把脚本放到单引号中。
+
+下面是一个简单的例子：
+
+```shell
+wsx@wsx-laptop:~/tmp$ gawk '{print "Hello World!"}'
+
+Hello World!
+This is a test
+Hello World!
+This is
+Hello World!
+
+Hello World!
+
+```
+
+`print`命令将文本打印到STDOUT。如果尝试允许命令，我们可能会有些失望，因为什么都不会发生，原因是没有指定文件名，所以gawk会从STDIN接收数据，如果我们按下回车，gawk会对这行文本允许一遍程序脚本。
+
+要终止这个程序必须表明数据流已经结束了，bash shell提供组合键来生成EOF(End-of-File)字符。Ctrl+D组合键会在bash中产生一个EOF字符。
+
+#### 使用数据字段变量
+
+gawk的主要特性之一是其处理文本文件中数据的能力，它自动给一行的每个数据元素分配一个变量。
+
+- $0代表整个文本行
+- $1代表文本行的第一个数据字段
+- $2代表文本行的第二个数据字段
+- $n代表文本行的第n个数据字段
+
+gawk在读取一行文本时，会用预定义的字段分隔符划分每个数据字段。默认字段分隔符为任意的空白字符（例如空格或制表符）。
+
+下面例子gawk读取文本显示第一个数据字段的值。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data2.txt
+One line of test text.
+Two lines of test text.
+Three lines of test text.
+wsx@wsx-laptop:~/tmp$ gawk '{print $1}' data2.txt
+One
+Two
+Three
+```
+
+我们可以使用`-F`选项指定其他字段分隔符：
+
+```shell
+wsx@wsx-laptop:~/tmp$ gawk -F: '{print $1}' /etc/passwd
+root
+daemon
+bin
+sys
+sync
+games
+man
+lp
+mail
+news
+uucp
+proxy
+www-data
+backup
+...
+```
+
+这个简短程序显示了系统中密码文件的第一个数据字段。
+
+#### 在程序脚本中使用多个命令
+
+在命令之间放个分号即可。
+
+```shell
+wsx@wsx-laptop:~/tmp$ echo "My name is Shixiang" | gawk '{$4="Christine"; print $0}'
+My name is Christine
+```
+
+也可以使用次提示符一次一行输入程序脚本命令（类似sed）。
+
+#### 从文件中读取程序
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat script2.gawk
+{print $1 " 's home directory is " $6}
+wsx@wsx-laptop:~/tmp$ gawk -F: -f script2.gawk  /etc/passwd
+root 's home directory is /root
+daemon 's home directory is /usr/sbin
+bin 's home directory is /bin
+sys 's home directory is /dev
+sync 's home directory is /bin
+games 's home directory is /usr/games
+man 's home directory is /var/cache/man
+lp 's home directory is /var/spool/lpd
+mail 's home directory is /var/mail
+news 's home directory is /var/spool/news
+uucp 's home directory is /var/spool/uucp
+proxy 's home directory is /bin
+...
+```
+
+可以在程序文件中指定多条命令：
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat script3.gawk
+{
+text = "'s home directory is "
+print $1 text $6
+}
+wsx@wsx-laptop:~/tmp$ gawk -F: -f script3.gawk /etc/passwd
+root's home directory is /root
+daemon's home directory is /usr/sbin
+bin's home directory is /bin
+sys's home directory is /dev
+sync's home directory is /bin
+games's home directory is /usr/games
+man's home directory is /var/cache/man
+lp's home directory is /var/spool/lpd
+mail's home directory is /var/mail
+news's home directory is /var/spool/news
+...
+```
+
+#### 在处理数据前运行脚本
+
+使用BEGIN关键字可以强制gawk再读取数据前执行BEGIN关键字指定的程序脚本。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data3.txt
+Line 1
+Line 2
+Line 3
+wsx@wsx-laptop:~/tmp$ gawk 'BEGIN {print "The data3 File Contents:"}
+> {print $0}' data3.txt
+The data3 File Contents:
+Line 1
+Line 2
+Line 3
+```
+
+在gawk执行了BEGIN脚本后，它会用第二段脚本来处理文件数据。
+
+#### 在处理数据后允许脚本
+
+与BEGIN关键字类似，END关键字允许我们指定一个脚本，gawk在读完数据后执行。
+
+```shell
+wsx@wsx-laptop:~/tmp$ gawk 'BEGIN {print "The data3 File Contents:"}
+> {print $0}
+> END {print "End of File"}' data3.txt
+The data3 File Contents:
+Line 1
+Line 2
+Line 3
+End of File
+```
+
+我们把所有的内容放在一起组成一个漂亮的小程序脚本，用它从简单的数据文件中创建一份完整报告。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat script4.gawk
+BEGIN {
+print "The latest list of users and shells"
+print " UserID \t Shell"
+print "-------- \t ------"
+FS=":"
+}
+
+{
+print $1 "      \t " $7
+}
+
+END {
+print "This concludes the listing"
+}
+wsx@wsx-laptop:~/tmp$ gawk -f script4.gawk /etc/passwd
+The latest list of users and shells
+ UserID          Shell
+--------         ------
+root             /bin/bash
+daemon           /usr/sbin/nologin
+bin              /usr/sbin/nologin
+sys              /usr/sbin/nologin
+sync             /bin/sync
+games            /usr/sbin/nologin
+man              /usr/sbin/nologin
+lp               /usr/sbin/nologin
+mail             /usr/sbin/nologin
+news             /usr/sbin/nologin
+uucp             /usr/sbin/nologin
+proxy            /usr/sbin/nologin
+www-data         /usr/sbin/nologin
+backup           /usr/sbin/nologin
+list             /usr/sbin/nologin
+irc              /usr/sbin/nologin
+gnats            /usr/sbin/nologin
+nobody           /usr/sbin/nologin
+systemd-timesync         /bin/false
+systemd-network          /bin/false
+systemd-resolve          /bin/false
+systemd-bus-proxy        /bin/false
+syslog           /bin/false
+_apt             /bin/false
+lxd              /bin/false
+messagebus               /bin/false
+uuidd            /bin/false
+dnsmasq          /bin/false
+sshd             /usr/sbin/nologin
+pollinate        /bin/false
+wsx              /bin/bash
+This concludes the listing
+```
+
+我们以后会继续学习gawk高级编程。
+
