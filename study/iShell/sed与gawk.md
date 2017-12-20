@@ -405,3 +405,198 @@ This concludes the listing
 
 我们以后会继续学习gawk高级编程。
 
+## sed编辑器基础
+
+下面介绍一些可以集成到脚本中的基本命令和功能。
+
+### 更多的替换选项
+
+之前我们已经学习了用`s`命令在行中替换文本，这个命令还有一些其他选项。
+
+#### 替换标记
+
+替换命令`s`默认只替换每行中出现的第一处。要让该命令能替换一行中不同地方出现的文本必须使用**替换标记**。该标记在替换命令字符串之后设置。
+
+```shell
+s/pattern/replacement/flags
+```
+
+替换标记有4种：
+
+- 数字，表明替换第几处模式匹配的地方
+- g，表明替换所有匹配的文本
+- p，表明原先行的内容要打印出来
+- w file，将替换的结果写入文件中
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data4.txt
+This is a test of the test script.
+This is the second test of the test script.
+wsx@wsx-laptop:~/tmp$ sed 's/test/trial/2' data4.txt
+This is a test of the trial script.
+This is the second test of the trial script.
+```
+
+该命令只替换每行中第二次出现的匹配模式。而`g`标记替换所有的匹配之处。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed 's/test/trial/g' data4.txt
+This is a trial of the trial script.
+This is the second trial of the trial script.
+```
+
+`p`替换标记会打印与替换命令中指定的模式匹配的行，通常与sed的`-n`选项一起使用。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data5.txt
+This is a test line.
+This is a different line.
+wsx@wsx-laptop:~/tmp$ sed -n 's/test/trial/p' data5.txt
+This is a trial line.
+```
+
+`-n`选项禁止sed编辑器输出，但`p`标记会输出修改过的行。两者配合使用就是**只输出被替换命令修改过的行**。
+
+`w`标记会产生同样的输出，不过会将输出（只输出被替换命令修改过的行）保存到指定文件中。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed 's/test/trial/w test.txt' data5.txt
+This is a trial line.
+This is a different line.
+wsx@wsx-laptop:~/tmp$ cat test.txt
+This is a trial line.
+```
+
+#### 替换字符
+
+有一些字符不方便在替换模式中使用，常见的例子为正斜线。
+
+替换文件中的路径名会比较麻烦，比如用C shell替换/etc/passwd文件中的bash shell，必须这样做（通过反斜线转义）：
+
+```shell
+wsx@wsx-laptop:~/tmp$ head /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+...
+wsx@wsx-laptop:~/tmp$ sed 's/\/bin\/bash/\/bin\/csh/' /etc/passwd
+root:x:0:0:root:/root:/bin/csh
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+...
+```
+
+为解决这样的问题，sed编辑器允许选择其他字符来替换命令中的字符串分隔符：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed 's!/bin/bash!/bin/csh!' /etc/passwd
+root:x:0:0:root:/root:/bin/csh
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+...
+```
+
+
+
+### 使用地址
+
+如果只想要命令作用于特定行或某些行，必须使用**行寻址**。
+
+有两种形式：
+
+- 以数字形式表示行区间
+- 用文本模式来过滤出行
+
+它们都使用相同地格式来指定地址：
+
+```shell
+[address]command
+```
+
+也可以将多个命令分组
+
+```shell
+address {
+  command1
+  command2
+  command3
+}
+```
+
+#### 以数字的方式行寻址
+
+sed编辑器会将文本流中的第一行编号为1，然后继续按顺序给以下行编号。
+
+指定的地址**可以是单个行号，或者用行号、逗号以及结尾行号指定的一定区间范围的行**。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+wsx@wsx-laptop:~/tmp$ sed '2s/dog/cat/' data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+wsx@wsx-laptop:~/tmp$ sed '2,3s/dog/cat/' data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+wsx@wsx-laptop:~/tmp$ sed '2,$s/dog/cat/' data1.txt  # 美元符指代最后一行
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+The quick brown fox jumps over the lazy cat.
+```
+
+#### 使用文本模式过滤器
+
+sed允许指定文本模式来过滤出命令要作用的行，格式如下：
+
+```
+/pattern/command
+```
+
+比如我要修改默认的shell，可以使用sed命令：
+
+```shell
+wsx@wsx-laptop:~/tmp$ grep wsx /etc/passwd
+wsx:x:1000:1000:"",,,:/home/wsx:/bin/bash
+wsx@wsx-laptop:~/tmp$ grep '/wsx/s/bash/csh/' /etc/passwd
+wsx@wsx-laptop:~/tmp$ sed '/wsx/s/bash/csh/' /etc/passwd
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+...
+wsx:x:1000:1000:"",,,:/home/wsx:/bin/csh
+```
+
+正则表达式允许创建高级文本模式匹配表达式来匹配各种数据，结合一系列通配符、特殊字符来生成几乎任何形式文本的简练模式。我们后续会学习到。
+
+#### 命令组合
+
+使用花括号可以将多条命令组合在一起。
+
+
+
