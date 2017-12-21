@@ -598,5 +598,141 @@ wsx:x:1000:1000:"",,,:/home/wsx:/bin/csh
 
 使用花括号可以将多条命令组合在一起。
 
+```shell
+wsx@wsx-laptop:~/tmp$ sed '2{
+> s/fox/elephant/
+> s/dog/cat/
+> }' data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown elephant jumps over the lazy cat.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+```
 
+也可以在一组命令前指定一个地址区间。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '3,${
+s/brown/green/
+s/lazy/active/
+}' data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+The quick green fox jumps over the active dog.
+```
+
+### 删除行
+
+如果需要删除文本流中的特定行，使用删除命令`d`，它会删除匹配指定寻址模式的所有行。**使用时要特别小心**，如果忘记加入寻址模式，会将所有文本行删除。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+wsx@wsx-laptop:~/tmp$ sed 'd' data1.txt
+```
+
+和指定的地址一起使用才能发挥删除命令的最大功用。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+wsx@wsx-laptop:~/tmp$ sed '3d' data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 4.
+```
+
+通过特定行区间指定：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '2,3d' data6.txt
+This is line number 1.
+This is line number 4.
+```
+
+通过特殊文本结尾字符指定：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '2,$d' data6.txt
+This is line number 1.
+```
+
+还可以使用模式匹配特性：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '/number 1/d' data6.txt
+This is line number 2.
+This is line number 3.
+This is line number 4.
+```
+
+sed会删除包含匹配模式的行。
+
+记住，sed不会修改原始文件。
+
+还可以使用两个文本模式来删除某个区间内的行，但做的时候需要特别小心，指定的第一个模式会“打开”行删除功能，第二个模式会“关闭”行删除功能。sed会删除两个指定行之间的所有行（包括指定行）。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data7.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+This is line number 1 again.
+This is text you want to keep.
+This is the last line in the file.
+wsx@wsx-laptop:~/tmp$ sed '/1/,/3/d' data7.txt
+This is line number 4.
+```
+
+第二个出现的数字“1”的行再次触发了删除命令，因为未能找到停止模式“3”，所以将数据流剩余的行全部删掉了。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '/1/,/5/d' data7.txt
+wsx@wsx-laptop:~/tmp$ sed '/2/,/4/d' data7.txt
+This is line number 1.
+This is line number 1 again.
+This is text you want to keep.
+This is the last line in the file.
+```
+
+### 插入和附加文本
+
+sed允许向数据流插入和附加文本行：
+
+- 插入命令`i`会在指定行前增加一个新行
+- 附加命令`a`会在指定行后增加一个新行
+
+注意，它们不能在单个命令行上使用，必须要指定是要插入还是要附加到的那一行。
+
+```shell
+wsx@wsx-laptop:~/tmp$ echo "Test Line 2" | sed 'i\Test Line 1'
+Test Line 1
+Test Line 2
+wsx@wsx-laptop:~/tmp$ echo "Test Line 2" | sed 'a\Test Line 1'
+Test Line 2
+Test Line 1
+```
 
