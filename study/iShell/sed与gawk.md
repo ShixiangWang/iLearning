@@ -736,3 +736,59 @@ Test Line 2
 Test Line 1
 ```
 
+要向数据流行内部插入或附加数据，必须用寻址来告诉sed数据应该出现在什么位置。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '3i\ This is an inserted line.' data6.txt
+This is line number 1.
+This is line number 2.
+ This is an inserted line.
+This is line number 3.
+This is line number 4.
+wsx@wsx-laptop:~/tmp$ sed '3a\ This is an inserted line.' data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+ This is an inserted line.
+This is line number 4.
+```
+
+如果想要给数据流末尾添加多行数据，通过`$`指定位置即可。
+
+```shell
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+ This is a new line.
+```
+
+
+
+### 修改行
+
+修改（change）命令允许修改整个数据流中整行文本内容。它跟插入和附加命令的工作机制一样。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '3c\This is a changed line.' data6.txt
+This is line number 1.
+This is line number 2.
+This is a changed line.
+This is line number 4.
+wsx@wsx-laptop:~/tmp$ sed '/number 3/c\This is a changed line.' data6.txt
+This is line number 1.
+This is line number 2.
+This is a changed line.
+This is line number 4.
+```
+
+
+
+### 转换命令
+
+转换命令（y）是**唯一可以处理单字符的sed命令**。格式如下：
+
+```shell
+[address]y/inchars/outchars
+```
+
