@@ -792,3 +792,210 @@ This is line number 4.
 [address]y/inchars/outchars
 ```
 
+转换命令会对`inchars`和`outchars`值进行一对一的映射。如果两者字符长度不同，则sed产生一条错误信息。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed 'y/123/789/' data6.txt
+This is line number 7.
+This is line number 8.
+This is line number 9.
+This is line number 4.
+```
+
+转换命令是一个全局命令，**它会在文本行中找到的所有指定字符自动进行转换，而不会考虑它们出现的位置**。
+
+### 回顾命令
+
+另有3个命令可以用来打印数据流中的信息：
+
+- `p`命令用来打印文本行
+- 等号`=`命令用来打印行号
+- `l`用来列出行
+
+#### 打印行
+
+```shell
+wsx@wsx-laptop:~/tmp$ echo "this is a test" | sed 'p'
+this is a test
+this is a test
+```
+
+`p`打印已有的数据文本。最常用的用法是打印符合匹配文本模式的行。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+wsx@wsx-laptop:~/tmp$ sed -n '/number 3/p' data6.txt
+This is line number 3.
+```
+
+在命令行上使用`-n`选项，可以禁止输出其他行，只打印包含匹配文本模式的行。
+
+也可以用来快速打印数据流中的某些行：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed -n '2,3p' data6.txt
+This is line number 2.
+This is line number 3.
+```
+
+#### 打印行号
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data1.txt
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+The quick brown fox jumps over the lazy dog.
+wsx@wsx-laptop:~/tmp$ sed '=' data1.txt
+1
+The quick brown fox jumps over the lazy dog.
+2
+The quick brown fox jumps over the lazy dog.
+3
+The quick brown fox jumps over the lazy dog.
+4
+The quick brown fox jumps over the lazy dog.
+5
+The quick brown fox jumps over the lazy dog.
+6
+The quick brown fox jumps over the lazy dog.
+7
+The quick brown fox jumps over the lazy dog.
+8
+The quick brown fox jumps over the lazy dog.
+9
+The quick brown fox jumps over the lazy dog.
+```
+
+这用来查找特定文本模式的话非常方便：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed -n '/number 4/{
+> =
+> p
+> }' data6.txt
+4
+This is line number 4.
+```
+
+#### 列出行
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data9.txt
+This    line    contains        tabs.
+wsx@wsx-laptop:~/tmp$ sed -n 'l' data9.txt
+This\tline\tcontains\ttabs.$
+```
+
+### 使用Sed处理文件
+
+#### 写入文件
+
+`w`命令用来向文件写入行。该命令格式如下：
+
+```shell
+[address]w filename	
+```
+
+将文本的前两行写入其他文件：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '1,2w test.txt' data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+wsx@wsx-laptop:~/tmp$ cat test.txt
+This is line number 1.
+This is line number 2.
+```
+
+如果不想让行显示到STDOUT（因为sed默认数据文本流），可以使用sed命令的`-n`选项。
+
+#### 读取数据
+
+读取命令为`r`。
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat data12.txt
+This is an added line.
+This is the second added line.
+wsx@wsx-laptop:~/tmp$ sed '3r data12.txt' data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is an added line.
+This is the second added line.
+This is line number 4.
+```
+
+这效果有点像插入文本命令`i`和补充命令`a`。
+
+ 同样适用于文本模式地址：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '/number 2/r data12.txt' data6.txt
+This is line number 1.
+This is line number 2.
+This is an added line.
+This is the second added line.
+This is line number 3.
+This is line number 4.
+```
+
+文本末尾添加：
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '$r data12.txt' data6.txt
+This is line number 1.
+This is line number 2.
+This is line number 3.
+This is line number 4.
+This is an added line.
+This is the second added line.
+```
+
+**读取命令的一个很酷的用法是和删除命令配合使用：利用另一个文件中的数据来替换文件中的占位文本**。假如你有一份套用信件保存在文本中：
+
+```shell
+wsx@wsx-laptop:~/tmp$ cat notice.std
+Would the following people:
+LIST
+please report to the ship's captain.
+```
+
+套用信件将通用占位文本`LIST`放在人物名单的位置，我们先根据它插入文本字符，然后删除它。
+
+```shell
+wsx@wsx-laptop:~/tmp$ sed '/LIST/{
+> r data10.txt
+> d
+> }' notice.std
+Would the following people:
+This line contains an escape character.
+please report to the ship's captain.
+wsx@wsx-laptop:~/tmp$ cat data10.txt
+This line contains an escape character.
+wsx@wsx-laptop:~/tmp$ cat data11.txt
+wangshx zhdan
+wsx@wsx-laptop:~/tmp$ sed '/LIST/{
+r data11.txt
+d
+}' notice.std
+Would the following people:
+wangshx zhdan
+please report to the ship's captain.
+```
+
+可以看到占位符被替换成了数据文件中的文字。
+
+完。
